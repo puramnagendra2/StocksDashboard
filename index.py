@@ -83,9 +83,9 @@ if "stock_data" in st.session_state:
         st.header(f"{stock_name} ({symbol})")
     
     with curr:
-        st.header(f" Current Price Rs. {data.info.get('currentPrice')} ")
+        st.header(f" Current Price Rs. {data.info.get('currentPrice', 'NA')} ")
         # st.write(data.info.keys())
-
+    st.link_button(label="Website Link", url=data.info.get('website', 'NA'), type="primary")
     st.divider()
     # Navigation
 
@@ -98,8 +98,53 @@ if "stock_data" in st.session_state:
         orientation="horizontal"
     )
 
+    # Overview Section
     if navigation_menu == "Overview":
-        st.header("Overview")
+        st.subheader(":blue[Summary]")
+        with st.expander(f" {stock_name}"):
+            st.text(data.info.get('longBusinessSummary', 'NA'))
+
+        # Address
+        st.subheader(":blue[Address]")
+        addr, city, country, emp1, emp2 = st.columns([2, 2, 2, 1, 1], gap="small")
+        with addr:
+            st.metric(label="Address", value=data.info.get('address1', 'NA'))
+        with city:
+            st.metric(label="City", value=data.info.get('city', 'NA'))
+        with country:
+            st.metric(label="Country", value=data.info.get('country', 'NA'))
+        
+        # Sector and Industry
+
+        st.subheader(":blue[Sector & Industry]")
+        emp1, sector, industry, emp2 = st.columns([0.5, 2, 2, 0.5], gap="medium")
+        with sector:
+            st.metric(label="Sector", value=data.info.get('sector', 'NA'), border=True)
+        with industry:
+            st.metric(label="Industry", value=data.info.get('industry', 'NA'), border=True)
+        
+        st.divider()
+        
+        # News
+        st.subheader(":blue[News]")
+
+        news = data.news
+        length_of_news = len(data.news)
+        # st.write(data.news[0])
+        for i in range(length_of_news):
+            news_articles = news[i]['content']
+            with st.expander(news_articles['title']):
+                st.write(news_articles['summary'])
+                provider, provider_site, link = st.tabs(tabs=['News Provider', 'Webiste', 'Reference Link'])
+
+                with provider:
+                    st.subheader(news_articles['provider']['displayName'])
+                with provider_site:
+                    st.link_button(label="Provider Site", url=news_articles['provider']['url'], type="secondary")
+                with link: 
+                    st.link_button(label="Reference", url=news_articles['thumbnail']['originalUrl'] if news_articles['thumbnail'] else "NA", type="primary")
+
+
     elif navigation_menu == "Charts":
         frame, space = st.columns([3, 0.5])
         with st.container(border=True):
