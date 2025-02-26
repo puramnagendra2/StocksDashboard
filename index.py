@@ -30,6 +30,12 @@ session = CachedLimiterSession(
    backend=SQLiteCache("yfinance.cache"),
 )
 
+
+# Defined Functions
+def format_to_crores(number):
+    crore_value = number / 10**7  # 1 crore = 10 million (10^7)
+    return f"{crore_value:,.2f} Cr"
+
 # Setting Page Configurations
 st.set_page_config(page_title="Stock Dashboard", page_icon=":clipboard:", layout="wide")
 
@@ -83,9 +89,9 @@ if "stock_data" in st.session_state:
         st.header(f"{stock_name} ({symbol})")
     
     with curr:
-        st.header(f" Current Price Rs. {data.info.get('currentPrice', 'NA')} ")
+        st.header(f" Current Price Rs. {data.info.get('currentPrice', 'No Data')} ")
         # st.write(data.info.keys())
-    st.link_button(label="Website Link", url=data.info.get('website', 'NA'), type="primary")
+    st.link_button(label="Website Link", url=data.info.get('website', 'No Data'), type="primary")
     st.divider()
     # Navigation
 
@@ -102,26 +108,56 @@ if "stock_data" in st.session_state:
     if navigation_menu == "Overview":
         st.subheader(":blue[Summary]")
         with st.expander(f" {stock_name}"):
-            st.text(data.info.get('longBusinessSummary', 'NA'))
+            st.text(data.info.get('longBusinessSummary', 'No Data'))
+        
+        officers, mar_cap, emp_count = st.columns([2, 1, 1], gap="small")
+        
+        # Officers
+        # st.write(data.info.get('companyOfficers'))
+        with officers:
+            st.subheader(":blue[Officers]")
+            off1, off2 = st.columns([1, 1], gap="small")
+            officers = data.info.get('companyOfficers', 'No Data')
+            with off1:
+                with st.popover(label=officers[0]['title'], icon=":material/badge:"):
+                    st.metric(label=officers[0]['title'], value=officers[0]['name'])
 
-        # Address
-        st.subheader(":blue[Address]")
-        addr, city, country, emp1, emp2 = st.columns([2, 2, 2, 1, 1], gap="small")
+            with off2:
+                with st.popover(label=officers[1]['title'], icon=":material/badge:"):
+                    st.metric(label=officers[1]['title'], value=officers[1]['name'])
+
+        # Market Capital
+        with mar_cap:
+            st.subheader(":blue[Market Capital]")
+            market_cap, empty = st.columns([2, 1], gap="small")
+            with market_cap:
+                st.metric(label="Market Cap", value=format_to_crores(data.info.get('marketCap', 'No Data')), label_visibility="collapsed")
+        
+        # Employee Count
+        with emp_count:
+            st.subheader(":blue[Employee Count]")
+            market_cap, empty = st.columns(2, gap="small")
+            with market_cap:
+                st.metric(label="Market Cap", value=data.info.get('fullTimeEmployees', 'No Data'), label_visibility="collapsed")
+
+        # Location
+        st.subheader(":blue[Location]")
+        addr, city, country = st.columns(3, gap="small")
         with addr:
-            st.metric(label="Address", value=data.info.get('address1', 'NA'))
+            st.metric(label="Address", value=data.info.get('address1', 'No Data'))
         with city:
-            st.metric(label="City", value=data.info.get('city', 'NA'))
+            st.metric(label="City", value=data.info.get('city', 'No Data'))
         with country:
-            st.metric(label="Country", value=data.info.get('country', 'NA'))
+            st.metric(label="Country", value=data.info.get('country', 'No Data'))
         
         # Sector and Industry
 
         st.subheader(":blue[Sector & Industry]")
         emp1, sector, industry, emp2 = st.columns([0.5, 2, 2, 0.5], gap="medium")
         with sector:
-            st.metric(label="Sector", value=data.info.get('sector', 'NA'), border=True)
+            st.metric(label="Sector", value=data.info.get('sector', 'No Data'), border=True)
         with industry:
-            st.metric(label="Industry", value=data.info.get('industry', 'NA'), border=True)
+            st.metric(label="Industry", value=data.info.get('industry', 'No Data'), border=True)
         
         st.divider()
         
@@ -142,8 +178,7 @@ if "stock_data" in st.session_state:
                 with provider_site:
                     st.link_button(label="Provider Site", url=news_articles['provider']['url'], type="secondary")
                 with link: 
-                    st.link_button(label="Reference", url=news_articles['thumbnail']['originalUrl'] if news_articles['thumbnail'] else "NA", type="primary")
-
+                    st.link_button(label="Reference", url=news_articles['thumbnail']['originalUrl'] if news_articles['thumbnail'] else "No Data", type="primary")
 
     elif navigation_menu == "Charts":
         frame, space = st.columns([3, 0.5])
@@ -183,7 +218,9 @@ if "stock_data" in st.session_state:
                 st.plotly_chart(candlestick_chart, theme="streamlit")
         
     elif navigation_menu == "Financials":
-        st.header("Financials")
+        st.header("Quarterly Analysis")
+        st.header("Annual Analysis")
+        st.write(data.incomestmt)
     elif navigation_menu == "Fundamentals":
         st.header("Fundamentals")
     else:
