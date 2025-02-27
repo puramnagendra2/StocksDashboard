@@ -7,7 +7,7 @@ import requests_cache
 import random
 
 # Data Libraries
-import time
+from datetime import datetime
 import numpy as np
 import pandas as pd
 import altair as alt
@@ -218,9 +218,117 @@ if "stock_data" in st.session_state:
                 st.plotly_chart(candlestick_chart, theme="streamlit")
         
     elif navigation_menu == "Financials":
-        st.header("Quarterly Analysis")
-        st.header("Annual Analysis")
-        st.write(data.incomestmt)
+        st.header(":red[Quarterly Analysis]")
+
+        st.subheader(":blue[Quarterly Balance Sheet]")
+        st.write(data.quarterly_balancesheet)
+
+        st.subheader(":blue[Quarterly Income Statement]")
+        st.write(data.quarterly_incomestmt)
+
+        st.divider()
+        st.header(":red[Annual Analysis]")
+
+        st.subheader(":blue[Balance Sheet]")
+        balanceSheet = data.balancesheet
+
+        # Dates Processing
+        dates = list(balanceSheet.columns)
+        formatted_dates = [str(i.year) for i in dates]
+
+        # Rows Processing
+        transposed_balanceSheet = balanceSheet.T
+        transposed_balanceSheet['Year'] = formatted_dates
+        transposed_balanceSheet = transposed_balanceSheet.head(4)
+
+        # Printing
+        # st.write(transposed_balanceSheet)
+
+        # Balance Sheet Charts
+        shares_number, debt_chart = st.columns(2, gap="large")
+        with shares_number:
+            bar_chart = px.bar(data_frame=transposed_balanceSheet, x="Year", y="Ordinary Shares Number", color="Year")
+            bar_chart.update_layout(title="Number of Ordinary Shares")
+            st.plotly_chart(bar_chart, theme="streamlit")
+
+        with debt_chart:
+            present_debt = None
+            if 'Net Debt' in transposed_balanceSheet.columns:
+                present_debt = 'Net Debt'
+            else:
+                present_debt = 'Current Debt'
+            debt_bar = go.Figure(data=[
+                    go.Bar(name="Total Debt", x=transposed_balanceSheet['Year'], y=transposed_balanceSheet['Total Debt'], marker_color='rgb(55, 83, 109)'),
+                    go.Bar(name="Net Debt", x=transposed_balanceSheet['Year'], y=transposed_balanceSheet[present_debt],
+                            marker_color='rgb(26, 118, 255)')
+                ], layout=dict(barcornerradius=10,)
+            )
+
+            debt_bar.update_layout(
+                title={
+                    'text': 'Total Debt vs Net Debt',
+                    'x': 0.5,  # Center the title horizontally
+                    'xanchor': 'center'
+                },
+                xaxis_title='Year',  
+                yaxis_title='Debt'
+            )
+
+            st.plotly_chart(debt_bar, theme="streamlit")
+
+        # Income Statement
+        st.subheader(":blue[Income Statement]")
+        incomeStmt = data.incomestmt
+
+        # Dates Processing
+        dates = list(incomeStmt.columns)
+        formatted_dates = [str(i.year) for i in dates]
+
+        transposed_incomeStmt = incomeStmt.T
+        transposed_incomeStmt['Year'] = formatted_dates
+        transposed_incomeStmt = transposed_incomeStmt.head(4)
+
+        # Printing
+        # st.write(transposed_incomeStmt)        
+
+        # EPS Bar Chart
+        eps_bar = go.Figure(data=[
+                go.Bar(name="Diluted EPS", x=transposed_incomeStmt['Year'], y=transposed_incomeStmt['Diluted EPS'], marker_color='rgb(70, 237, 200)'),
+                go.Bar(name="Basic EPS", x=transposed_incomeStmt['Year'], y=transposed_incomeStmt['Basic EPS'], marker_color='rgb(55, 77, 124)'),
+            ], layout=dict(barcornerradius=10,)
+        )
+        eps_bar.update_layout(
+            title={
+                'text': 'Yearly Basic EPS',
+                'x': 0.5,  # Center the title horizontally
+                'xanchor': 'center'
+            },
+            xaxis_title='Year',  
+            yaxis_title='EPS Value',
+            height=500
+        )
+        st.plotly_chart(eps_bar, theme="streamlit")        
+    
+
+        # Operating Revenue vs Operating Income
+        ebitda_bar = go.Figure(data=[
+                go.Bar(name="Total Revenue", x=transposed_incomeStmt['Year'], y=transposed_incomeStmt['Total Revenue'], marker_color='rgb(55, 77, 124)'),
+                go.Bar(name="Net Income", x=transposed_incomeStmt['Year'], y=transposed_incomeStmt['Net Income'], marker_color='rgb(70, 237, 200)'),
+            ], layout=dict(barcornerradius=10,)
+        )
+
+        ebitda_bar.update_layout(
+            title={
+                'text': 'Total Revenue vs Net Income',
+                'x': 0.5,  # Center the title horizontally
+                'xanchor': 'center'
+            },
+            xaxis_title='Year',  
+            yaxis_title='Value',
+            height=500
+        )
+        st.plotly_chart(ebitda_bar, theme="streamlit")
+
     elif navigation_menu == "Fundamentals":
         st.header("Fundamentals")
     else:
